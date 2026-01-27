@@ -3,7 +3,7 @@ name = "hiyoshi-bot"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "discord-py>=2.6.4",
     "google-auth>=2.48.0",
