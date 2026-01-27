@@ -131,7 +131,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
             
             # Append to sheets
             if client.sheet_manager:
-                success = client.sheet_manager.append_score(data, username)
+                success = client.sheet_manager.append_score(data, username, worksheet_name="素データ")
                 if success:
                     reply_text += "\n✅ **Spreadsheet updated!**"
                 else:
