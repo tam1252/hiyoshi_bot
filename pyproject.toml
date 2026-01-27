@@ -1,0 +1,19 @@
+[project]
+name = "hiyoshi-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "discord-py>=2.6.4",
+    "easyocr>=1.7.2",
+    "google-auth>=2.48.0",
+    "google-cloud-vision>=3.12.0",
+    "gspread>=6.2.1",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.10.8",
+    "notebook>=7.5.3",
+    "opencv-python-headless>=4.13.0.90",
+    "python-dotenv>=1.2.1",
+    "rapidfuzz>=3.14.3",
+]
