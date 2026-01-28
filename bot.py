@@ -63,7 +63,7 @@ client = MyClient()
 @app_commands.describe(image="リザルト画像")
 async def result(interaction: discord.Interaction, image: discord.Attachment):
     # Defer response as OCR might take time
-    await interaction.response.defer()
+    await interaction.response.defer(ephemeral=True)
 
     if not image.content_type or not image.content_type.startswith('image/'):
         await interaction.followup.send("画像ファイルをアップロードしてください。")
