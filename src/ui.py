@@ -87,7 +87,7 @@ class VerificationView(ui.View):
             
             # Send to the channel (public)
             if interaction.channel:
-                 await interaction.channel.send(content=f"{username} が予選スコアを提出しました！", embed=embed)
+                 await interaction.channel.send(content="", embed=embed)
 
             # 3. Update Ephemeral Message (The View)
             final_content = (
