@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from src.ocr import IIDXReader
 from src.sheets import SheetManager
 from src.matcher import TitleMatcher
+from src.ui import VerificationView
 
 # Load environment variables
 load_dotenv()
@@ -100,7 +101,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
                         end_obj = datetime.strptime(EVENT_END_DATE, "%Y-%m-%d")
                         
                         if not (start_obj <= date_obj <= end_obj):
-                            await interaction.followup.send(f"⚠️ 指定期間外のリザルトです。予選期間内の画像をアップロードしてください。")
+                            await interaction.followup.send(f"指定期間外のリザルトです。予選期間内の画像をアップロードしてください。")
                             return
                 except Exception as e:
                     print(f"Date Parsing Warning: {e}")
@@ -110,7 +111,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
                  # "指定期間内のリザルトをアップロードしてください" implies rejection if not verified.
                  # Let's assume rejection if no date found? Or let it pass if date is missing (OCR failure)?
                  # "日付について...入っているものだけを受け取る" implies strict -> Reject on missing date.
-                 await interaction.followup.send(f"⚠️ 画像から日付を読み取れませんでした。鮮明な画像をアップロードしてください。")
+                 await interaction.followup.send(f"画像から日付を読み取れませんでした。鮮明な画像をアップロードしてください。")
                  return
 
             # --- Title Fuzzy Matching ---
@@ -122,24 +123,29 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
             # Get username
             username = interaction.user.display_name
             
-            # Format reply
-            reply_text = "### OCR Result\n"
-            reply_text += f"**Date**: {data.get('date') or 'N/A'}\n"
-            reply_text += f"**Player**: {username}\n"
-            reply_text += f"**Song**: {data.get('title') or 'N/A'}\n"
-            reply_text += f"**Score**: {data.get('score') or 'N/A'}\n"
+            # Format reply (Preview for Verification)
+            reply_text = "### OCR Result Preview\n"
+            reply_text += "以下の内容で登録します。問題なければ「送信」、間違っていれば「修正」を押してください。\n"
             
-            # Append to sheets
-            if client.sheet_manager:
-                success = client.sheet_manager.append_score(data, username, worksheet_name="素データ")
-                if success:
-                    reply_text += "\n✅ **Spreadsheet updated!**"
-                else:
-                    reply_text += "\n❌ **Failed to update spreadsheet.**"
-            else:
-                reply_text += "\n⚠️ Spreadsheet Integration disabled."
+            # Create Embed for preview
+            embed = discord.Embed(title="OCR Result Preview", color=discord.Color.blue())
+            embed.add_field(name="Date", value=data.get('date') or 'N/A', inline=True)
+            embed.add_field(name="Player", value=username, inline=True)
+            embed.add_field(name="Song", value=data.get('title') or 'N/A', inline=True)
+            embed.add_field(name="Score", value=str(data.get('score') or 'N/A'), inline=True)
             
-            await interaction.followup.send(reply_text)
+            # Image URL for embed
+            # discord.Attachment has a 'url' property
+            image_url = image.url
+            embed.set_thumbnail(url=image_url)
+            
+            # Create View
+            view = VerificationView(data, username, client, image_url)
+            
+            # Send Ephemeral Message with View
+            # Using followup because we deferred
+            message = await interaction.followup.send(content=reply_text, embed=embed, view=view, ephemeral=True)
+            view.message = message
         
         except Exception as e:
             await interaction.followup.send(f"Error processing image: {e}")
