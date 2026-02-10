@@ -27,10 +27,10 @@ class SheetManager:
         self.workbook = self.client.open_by_key(sheet_key)
         self.sheet = self.workbook.sheet1
 
-    def append_score(self, data, username, worksheet_name=None):
+    def append_score(self, data, username, is_qualifier=False, worksheet_name=None):
         """
         Appends a score entry to the sheet.
-        Columns: [Date, User Name, Song Title, Score]
+        Columns: [Date, User Name, Song Title, Score, Is Qualifier]
         """
         if not self.workbook:
             raise RuntimeError("Sheet not connected. Call connect() first.")
@@ -56,8 +56,9 @@ class SheetManager:
         title = data.get('title', '') or 'Unknown'
         score = data.get('score', '') or 0
         
-        # [Date, User Name, Song Title, Score]
-        row = [ocr_date, username, title, score]
+        # [Date, User Name, Song Title, Score, Is Qualifier]
+        # is_qualifier: True/False -> TRUE/FALSE in sheet (or customised if needed)
+        row = [ocr_date, username, title, score, is_qualifier]
         
         try:
             target_sheet.append_row(row)

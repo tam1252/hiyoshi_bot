@@ -139,8 +139,15 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
             image_url = image.url
             embed.set_thumbnail(url=image_url)
             
+            # Check for qualifier role
+            is_qualifier = False
+            if isinstance(interaction.user, discord.Member):
+                role_names = [role.name for role in interaction.user.roles]
+                if "日吉マスターズ予選参加者" in role_names:
+                    is_qualifier = True
+            
             # Create View
-            view = VerificationView(data, username, client, image_url)
+            view = VerificationView(data, username, client, image_url, is_qualifier)
             
             # Send Ephemeral Message with View
             # Using followup because we deferred

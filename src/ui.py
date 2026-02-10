@@ -12,13 +12,14 @@ class ScoreCorrectionModal(ui.Modal, title="スコア修正"):
         max_length=5
     )
 
-    def __init__(self, view, data, username, client, image_url):
+    def __init__(self, view, data, username, client, image_url, is_qualifier):
         super().__init__()
         self.original_view = view
         self.data = data
         self.username = username
         self.client = client
         self.image_url = image_url
+        self.is_qualifier = is_qualifier
         # Set default value
         self.score_input.default = str(data.get('score', 0))
 
@@ -40,34 +41,51 @@ class ScoreCorrectionModal(ui.Modal, title="スコア修正"):
 
         # Proceed to submission
         # We need to update the original message to reflect the new state (Confirmed)
-        await self.original_view.finalize_submission(interaction, self.data, self.username, self.client, self.image_url, is_modal=True)
+        await self.original_view.finalize_submission(
+            interaction, 
+            self.data, 
+            self.username, 
+            self.client, 
+            self.image_url, 
+            self.is_qualifier,
+            is_modal=True
+        )
 
 
 class VerificationView(ui.View):
-    def __init__(self, data, username, client, image_url):
+    def __init__(self, data, username, client, image_url, is_qualifier=False):
         super().__init__(timeout=None)
         self.data = data
         self.username = username
         self.client = client
         self.image_url = image_url
+        self.is_qualifier = is_qualifier
         self.message = None # To be set after sending
 
     @ui.button(label="送信", style=discord.ButtonStyle.green, custom_id="verify_submit")
     async def submit(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer()
-        await self.finalize_submission(interaction, self.data, self.username, self.client, self.image_url, is_modal=False)
+        await self.finalize_submission(
+            interaction, 
+            self.data, 
+            self.username, 
+            self.client, 
+            self.image_url, 
+            self.is_qualifier,
+            is_modal=False
+        )
 
     @ui.button(label="修正", style=discord.ButtonStyle.secondary, custom_id="verify_edit")
     async def edit(self, interaction: discord.Interaction, button: ui.Button):
-        modal = ScoreCorrectionModal(self, self.data, self.username, self.client, self.image_url)
+        modal = ScoreCorrectionModal(self, self.data, self.username, self.client, self.image_url, self.is_qualifier)
         await interaction.response.send_modal(modal)
 
-    async def finalize_submission(self, interaction, data, username, client, image_url, is_modal):
+    async def finalize_submission(self, interaction, data, username, client, image_url, is_qualifier, is_modal):
         try:
             # 1. Write to sheet
             status_text = ""
             if client.sheet_manager:
-                success = client.sheet_manager.append_score(data, username, worksheet_name="素データ")
+                success = client.sheet_manager.append_score(data, username, is_qualifier, worksheet_name="素データ")
                 if success:
                     status_text = "スプレッドシートを更新しました！"
                 else:
