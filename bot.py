@@ -88,31 +88,36 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
             ocr_date_str = data.get('date')
             if ocr_date_str:
                 try:
-                    # Cloud Vision usually returns YYYY-MM-DD HH:MM
-                    # Or verify_ocr output format which is similar
-                    # Let's handle generic ISO-like formats
-                    # Normalize separators
                     norm_date = ocr_date_str.replace('/', '-').replace('.', '-')
-                    # Parse just the date part (first 10 chars should be YYYY-MM-DD)
-                    date_obj = datetime.strptime(norm_date[:10], "%Y-%m-%d")
-                    
+                    # Try to parse with time component first, then fall back to date only
+                    if len(norm_date) >= 16 and ':' in norm_date:
+                        image_dt = datetime.strptime(norm_date[:16], "%Y-%m-%d %H:%M")
+                        # 12時間以内チェック
+                        now = datetime.now()
+                        elapsed = now - image_dt
+                        if elapsed.total_seconds() > 12 * 3600:
+                            await interaction.followup.send("リザルト画像の時刻から12時間以上経過しています。24時間以内のリザルト画像をアップロードしてください。")
+                            return
+                        if elapsed.total_seconds() < -3600:
+                            # 画像の時刻が未来（1時間以上先）は異常
+                            await interaction.followup.send("画像の時刻が不正です。正しいリザルト画像をアップロードしてください。")
+                            return
+                        date_obj = image_dt
+                    else:
+                        date_obj = datetime.strptime(norm_date[:10], "%Y-%m-%d")
+
                     if EVENT_START_DATE and EVENT_END_DATE:
                         start_obj = datetime.strptime(EVENT_START_DATE, "%Y-%m-%d")
                         end_obj = datetime.strptime(EVENT_END_DATE, "%Y-%m-%d")
-                        
+
                         if not (start_obj <= date_obj <= end_obj):
-                            await interaction.followup.send(f"指定期間外のリザルトです。予選期間内の画像をアップロードしてください。")
+                            await interaction.followup.send("指定期間外のリザルトです。予選期間内の画像をアップロードしてください。")
                             return
                 except Exception as e:
                     print(f"Date Parsing Warning: {e}")
             else:
-                 # If no date found, what to do? User said: "入っていない場合は...受け取るようにして欲しい"(Only strict filtering mentioned). 
-                 # Usually safest to block if strict, or warn. 
-                 # "指定期間内のリザルトをアップロードしてください" implies rejection if not verified.
-                 # Let's assume rejection if no date found? Or let it pass if date is missing (OCR failure)?
-                 # "日付について...入っているものだけを受け取る" implies strict -> Reject on missing date.
-                 await interaction.followup.send(f"画像から日付を読み取れませんでした。鮮明な画像をアップロードしてください。")
-                 return
+                await interaction.followup.send("画像から日付を読み取れませんでした。鮮明な画像をアップロードしてください。")
+                return
 
             # --- Title Fuzzy Matching ---
             raw_title = data.get('title')

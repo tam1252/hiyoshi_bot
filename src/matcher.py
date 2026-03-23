@@ -27,7 +27,7 @@ class TitleMatcher:
             print(f"DEBUG: Matching '{ocr_title}' -> '{match}' (Score: {score})")
             
             # Lower threshold for messy OCR
-            if score >= 45.0:
+            if score >= 60.0:
                 return match
         
         return ocr_title
