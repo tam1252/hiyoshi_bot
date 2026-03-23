@@ -148,7 +148,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
             is_qualifier = False
             if isinstance(interaction.user, discord.Member):
                 role_names = [role.name for role in interaction.user.roles]
-                if "日吉マスターズ予選参加者" in role_names:
+                if "鍵盤最強王予選参加者" in role_names:
                     is_qualifier = True
             
             # Create View
