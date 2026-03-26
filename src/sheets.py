@@ -61,7 +61,7 @@ class SheetManager:
         row = [ocr_date, username, title, score, is_qualifier]
         
         try:
-            target_sheet.append_row(row)
+            target_sheet.append_row(row, value_input_option='USER_ENTERED')
             return True
         except Exception as e:
             print(f"Error appending to sheet: {e}")
