@@ -108,7 +108,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
 
                     if EVENT_START_DATE and EVENT_END_DATE:
                         start_obj = datetime.strptime(EVENT_START_DATE, "%Y-%m-%d")
-                        end_obj = datetime.strptime(EVENT_END_DATE, "%Y-%m-%d")
+                        end_obj = datetime.strptime(EVENT_END_DATE, "%Y-%m-%d").replace(hour=23, minute=59)
 
                         if not (start_obj <= date_obj <= end_obj):
                             await interaction.followup.send("指定期間外のリザルトです。予選期間内の画像をアップロードしてください。")
