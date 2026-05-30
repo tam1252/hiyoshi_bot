@@ -13,24 +13,22 @@ class TitleMatcher:
     def correct_title(self, ocr_title):
         """
         Returns the best matching title from the song list.
-        If no songs are loaded or match score is too low, returns original.
+        Always returns a candidate from songs.txt if the list is loaded.
         """
-        if not self.songs or not ocr_title:
+        if not self.songs:
             return ocr_title
 
-        # extractOne returns (match, score, index)
-        # WRatio handles case, partial matching, and sorting well
+        if not ocr_title:
+            return self.songs[0]
+
         result = process.extractOne(ocr_title, self.songs, scorer=fuzz.WRatio)
-        
+
         if result:
             match, score, _ = result
             print(f"DEBUG: Matching '{ocr_title}' -> '{match}' (Score: {score})")
-            
-            # Lower threshold for messy OCR
-            if score >= 60.0:
-                return match
-        
-        return ocr_title
+            return match
+
+        return self.songs[0]
 
 if __name__ == "__main__":
     # Test

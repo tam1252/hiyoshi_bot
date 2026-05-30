@@ -17,6 +17,9 @@ GUILD_ID = os.getenv('GUILD_ID') # Optional: for instant sync in dev server
 EVENT_START_DATE = os.getenv('EVENT_START_DATE')
 EVENT_END_DATE = os.getenv('EVENT_END_DATE')
 SERVICE_ACCOUNT_PATH = "service_account.json"
+ADMIN_USER_IDS = set(
+    uid.strip() for uid in os.getenv('ADMIN_USER_IDS', '').split(',') if uid.strip()
+)
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -73,17 +76,19 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
     try:
         # Download image
         image_bytes = await image.read()
-        
+
         # Save temporary file for OpenCV
         # src/ocr.py expects a file path.
         temp_filename = f"temp_{interaction.id}_{image.filename}"
         with open(temp_filename, 'wb') as f:
             f.write(image_bytes)
-        
+
+        is_admin = str(interaction.user.id) in ADMIN_USER_IDS
+
         try:
             # Run OCR
             data = client.ocr_reader.extract_data(temp_filename)
-            
+
             # --- Date Filtering ---
             ocr_date_str = data.get('date')
             if ocr_date_str:
@@ -92,13 +97,13 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
                     # Try to parse with time component first, then fall back to date only
                     if len(norm_date) >= 16 and ':' in norm_date:
                         image_dt = datetime.strptime(norm_date[:16], "%Y-%m-%d %H:%M")
-                        # 12時間以内チェック
+                        # 12時間以内チェック（管理者はスキップ）
                         now = datetime.now()
                         elapsed = now - image_dt
-                        if elapsed.total_seconds() > 12 * 3600:
+                        if not is_admin and elapsed.total_seconds() > 12 * 3600:
                             await interaction.followup.send("リザルト画像の時刻から12時間以上経過しています。24時間以内のリザルト画像をアップロードしてください。")
                             return
-                        if elapsed.total_seconds() < -3600:
+                        if not is_admin and elapsed.total_seconds() < -3600:
                             # 画像の時刻が未来（1時間以上先）は異常
                             await interaction.followup.send("画像の時刻が不正です。正しいリザルト画像をアップロードしてください。")
                             return
@@ -106,7 +111,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
                     else:
                         date_obj = datetime.strptime(norm_date[:10], "%Y-%m-%d")
 
-                    if EVENT_START_DATE and EVENT_END_DATE:
+                    if not is_admin and EVENT_START_DATE and EVENT_END_DATE:
                         start_obj = datetime.strptime(EVENT_START_DATE, "%Y-%m-%d")
                         end_obj = datetime.strptime(EVENT_END_DATE, "%Y-%m-%d").replace(hour=23, minute=59)
 
@@ -152,7 +157,7 @@ async def result(interaction: discord.Interaction, image: discord.Attachment):
                     is_qualifier = True
             
             # Create View
-            view = VerificationView(data, username, client, image_url, is_qualifier)
+            view = VerificationView(data, username, client, image_url, is_qualifier, songs=client.matcher.songs)
             
             # Send Ephemeral Message with View
             # Using followup because we deferred
